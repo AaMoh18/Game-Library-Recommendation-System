@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Library & Recommendation System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://i.ytimg.com/vi/JTMNIztF0Hs/maxresdefault.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #e0e0e0;
+        }
+        .scrollable-content {
+            max-height: 85vh;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #4a5568 #2d3748;
+        }
+        .scrollable-content::-webkit-scrollbar { width: 8px; }
+        .scrollable-content::-webkit-scrollbar-track { background: #2d3748; border-radius: 10px; }
+        .scrollable-content::-webkit-scrollbar-thumb { background-color: #4a5568; border-radius: 10px; border: 2px solid #2d3748; }
+        .sort-btn.active {
+            background-color: #2563eb;
+            color: white;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+        <h1 class="text-3xl font-bold text-gray-200">Game Library</h1>
+        <div class="flex items-center space-x-4">
+            <input type="text" id="searchInput" placeholder="Search for games..." class="w-full sm:w-80 px-4 py-2 rounded-full bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
+            
+            <div class="relative inline-block text-left z-20">
+                <div>
+                    <button type="button" id="genreFilterBtn" class="bg-gray-800 hover:bg-gray-900 text-gray-300 font-medium py-2 px-6 rounded-full transition-colors duration-300 shadow-lg inline-flex justify-center w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        Filter by Genre
+                        <svg class="-mr-1 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    </button>
+                </div>
+                <div id="genreDropdown" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none hidden">
+                    <div id="genreOptions" class="py-1"></div>
+                </div>
+            </div>
+
+            <div id="authButtons" class="flex items-center space-x-2">
+                <button id="loginBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-full transition-colors duration-300 shadow-lg">Login</button>
+                <button id="registerBtn" class="bg-gray-800 hover:bg-gray-900 text-gray-300 font-medium py-2 px-6 rounded-full transition-colors duration-300 shadow-lg">Register</button>
+            </div>
+            <div id="userProfile" class="hidden flex items-center space-x-2">
+                <span id="welcomeMessage" class="text-sm font-medium text-gray-300"></span>
+                <button id="accountBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-full transition-colors duration-300 shadow-lg">Account</button>
+                <button id="wishlistBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-full transition-colors duration-300 shadow-lg">Wishlist</button>
+                <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-full transition-colors duration-300 shadow-lg">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto">
+        <div id="loadingIndicator" class="text-center py-8 text-gray-400 hidden">
+            <svg class="animate-spin h-8 w-8 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="mt-2">Loading games...</p>
+        </div>
+
+        <!-- Developer Dashboard Section -->
+        <section id="developerDashboard" class="mb-10 hidden bg-gray-800/50 p-6 rounded-xl">
+            <h2 class="text-2xl font-semibold mb-4">Developer Dashboard</h2>
+            <div class="flex space-x-4 mb-6 border-b border-gray-700">
+                <button id="myGamesTabBtn" class="py-2 px-4 text-lg font-medium border-b-2 border-blue-500 text-white">My Games</button>
+                <button id="analyticsTabBtn" class="py-2 px-4 text-lg font-medium border-b-2 border-transparent text-gray-400 hover:text-white">Analytics</button>
+            </div>
+            
+            <div id="myGamesView">
+                <div class="flex justify-end mb-4">
+                    <button id="addGameBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Add New Game</button>
+                </div>
+                <div id="myGamesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+            </div>
+
+            <div id="analyticsView" class="hidden">
+                <div id="analyticsGrid" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <section id="gameListSection" class="mb-10">
+             <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+                 <h2 class="text-2xl font-semibold">Game Library</h2>
+                 <div id="sortButtons" class="flex items-center space-x-2 bg-gray-800 rounded-full p-1 mt-4 sm:mt-0">
+                     <button id="sortByRatingBtn" class="sort-btn px-4 py-1 rounded-full text-sm font-medium transition-colors duration-200 active">Highest Rating</button>
+                     <button id="sortByReviewsBtn" class="sort-btn px-4 py-1 rounded-full text-sm font-medium transition-colors duration-200">Most Reviews</button>
+                     <button id="sortByWishlistBtn" class="sort-btn px-4 py-1 rounded-full text-sm font-medium transition-colors duration-200">Most Wishlisted</button>
+                 </div>
+            </div>
+            <div id="gameGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        </section>
+
+        <section id="recommendationSection" class="mb-10 hidden">
+            <h2 class="text-2xl font-semibold mb-6">Recommendations for You</h2>
+            <div id="recommendationGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        </section>
+        
+        <section id="wishlistSection" class="mb-10 hidden">
+            <h2 class="text-2xl font-semibold mb-6">Your Wishlist</h2>
+            <div id="wishlistGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        </section>
+
+        <!-- MODALS -->
+        <div id="gameDetailsModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl p-8 scrollable-content"><div class="flex justify-end"><button id="closeModalBtn" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button></div><div id="modalContent" class="flex flex-col md:flex-row gap-6"></div></div>
+        </div>
+        <div id="authModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-8"><div class="flex justify-between items-center mb-6"><h2 id="authTitle" class="text-2xl font-semibold">Login</h2><button id="closeAuthModalBtn" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button></div><form id="authForm"><div id="nameField" class="mb-4 hidden"><label for="name" class="block text-gray-400 text-sm font-medium mb-2">Name</label><input type="text" id="name" name="name" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></div><div class="mb-4"><label for="email" class="block text-gray-400 text-sm font-medium mb-2">Email</label><input type="email" id="email" name="email" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required></div><div class="mb-6"><label for="password" class="block text-gray-400 text-sm font-medium mb-2">Password</label><input type="password" id="password" name="password" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required></div><button type="submit" id="authSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Login</button><p id="authMessage" class="text-center text-sm mt-4"></p></form></div>
+        </div>
+        <div id="accountSettingsModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg p-8 space-y-6"><div class="flex justify-between items-center"><h2 class="text-2xl font-semibold">Account Settings</h2><button id="closeAccountModalBtn" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button></div><div><h3 class="font-semibold mb-2">Change Username</h3><form id="changeUsernameForm" class="flex items-center space-x-2"><input type="text" id="newUsername" placeholder="New username" class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600" required><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Save</button></form><p id="usernameMessage" class="text-sm mt-2"></p></div><div><h3 class="font-semibold mb-2">Change Password</h3><form id="changePasswordForm" class="flex items-center space-x-2"><input type="password" id="newPassword" placeholder="New password" class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600" required><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Save</button></form><p id="passwordMessage" class="text-sm mt-2"></p></div><div id="developerUpgradeSection"><h3 class="font-semibold mb-2">Developer Account</h3><button id="convertToDevBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 py-2 rounded-lg">Upgrade to Developer Account</button><p id="developerMessage" class="text-sm mt-2"></p></div><div class="border-t border-red-500/30 pt-4"><h3 class="font-semibold mb-2 text-red-400">Danger Zone</h3><button id="deleteAccountBtn" class="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg">Delete My Account</button></div></div>
+        </div>
+        <div id="addGameModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl p-8 scrollable-content"><div class="flex justify-between items-center mb-6"><h2 id="addGameTitle" class="text-2xl font-semibold">Add New Game</h2><button id="closeAddGameModalBtn" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button></div><form id="addGameForm" class="space-y-4"><input type="hidden" id="gameId" name="gameId"><input type="text" id="gameTitle" placeholder="Game Title" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required><textarea id="gameDescription" placeholder="Description" class="w-full p-2 rounded bg-gray-700 border border-gray-600" rows="4" required></textarea><input type="text" id="gamePublisher" placeholder="Publisher" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required><input type="number" id="gameReleaseYear" placeholder="Release Year" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required><input type="text" id="gameImage" placeholder="Image URL" class="w-full p-2 rounded bg-gray-700 border border-gray-600"><select id="gameGenre" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required><option value="">Select Genre</option></select><select id="gamePlatform" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required><option value="">Select Platform</option></select><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Save Game</button><p id="addGameMessage" class="text-sm mt-2 text-center"></p></form></div>
+        </div>
+    </main>
+
+    <footer class="text-center text-gray-500 text-sm mt-10 p-4 border-t border-gray-700">
+        &copy; 2024 Game Library & Recommendation System. All rights reserved.
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Global State ---
+        let loggedInUser = null;
+        const BASE_URL = 'http://127.0.0.1:5000';
+        let allGenres = [];
+        let allPlatforms = [];
+        let selectedGenreIds = [];
+        let userWishlist = [];
+        let myGames = [];
+        let currentSortBy = 'rating';
+
+        // --- DOM Elements ---
+        const gameGrid = document.getElementById('gameGrid'), searchInput = document.getElementById('searchInput');
+        const genreFilterBtn = document.getElementById('genreFilterBtn'), genreDropdown = document.getElementById('genreDropdown'), genreOptions = document.getElementById('genreOptions');
+        const gameListSection = document.getElementById('gameListSection'), recommendationSection = document.getElementById('recommendationSection'), recommendationGrid = document.getElementById('recommendationGrid');
+        const loadingIndicator = document.getElementById('loadingIndicator'), wishlistSection = document.getElementById('wishlistSection'), wishlistGrid = document.getElementById('wishlistGrid');
+        const loginBtn = document.getElementById('loginBtn'), registerBtn = document.getElementById('registerBtn'), logoutBtn = document.getElementById('logoutBtn'), wishlistBtn = document.getElementById('wishlistBtn'), accountBtn = document.getElementById('accountBtn');
+        const authModal = document.getElementById('authModal'), closeAuthModalBtn = document.getElementById('closeAuthModalBtn'), authTitle = document.getElementById('authTitle'), nameField = document.getElementById('nameField'), authForm = document.getElementById('authForm'), authSubmitBtn = document.getElementById('authSubmitBtn'), authMessage = document.getElementById('authMessage');
+        const authButtons = document.getElementById('authButtons'), userProfile = document.getElementById('userProfile'), welcomeMessage = document.getElementById('welcomeMessage');
+        const gameDetailsModal = document.getElementById('gameDetailsModal'), closeModalBtn = document.getElementById('closeModalBtn'), modalContent = document.getElementById('modalContent');
+        const accountSettingsModal = document.getElementById('accountSettingsModal'), closeAccountModalBtn = document.getElementById('closeAccountModalBtn');
+        const changeUsernameForm = document.getElementById('changeUsernameForm'), usernameMessage = document.getElementById('usernameMessage'), newUsernameInput = document.getElementById('newUsername');
+        const changePasswordForm = document.getElementById('changePasswordForm'), passwordMessage = document.getElementById('passwordMessage');
+        const developerUpgradeSection = document.getElementById('developerUpgradeSection'), convertToDevBtn = document.getElementById('convertToDevBtn'), developerMessage = document.getElementById('developerMessage');
+        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+        const developerDashboard = document.getElementById('developerDashboard'), myGamesTabBtn = document.getElementById('myGamesTabBtn'), analyticsTabBtn = document.getElementById('analyticsTabBtn');
+        const myGamesView = document.getElementById('myGamesView'), analyticsView = document.getElementById('analyticsView'), addGameBtn = document.getElementById('addGameBtn');
+        const myGamesGrid = document.getElementById('myGamesGrid'), analyticsGrid = document.getElementById('analyticsGrid');
+        const addGameModal = document.getElementById('addGameModal'), closeAddGameModalBtn = document.getElementById('closeAddGameModalBtn'), addGameForm = document.getElementById('addGameForm'), addGameTitle = document.getElementById('addGameTitle'), addGameMessage = document.getElementById('addGameMessage');
+        const sortByRatingBtn = document.getElementById('sortByRatingBtn'), sortByReviewsBtn = document.getElementById('sortByReviewsBtn'), sortByWishlistBtn = document.getElementById('sortByWishlistBtn');
+
+        // --- Utility Functions ---
+        const showElement = (el) => el.classList.remove('hidden');
+        const hideElement = (el) => el.classList.add('hidden');
+        const clearGrid = (grid) => grid.innerHTML = '';
+        const setLoading = (isLoading) => isLoading ? (showElement(loadingIndicator), hideElement(gameListSection)) : (hideElement(loadingIndicator), showElement(gameListSection));
+        
+        const fetchAPI = async (endpoint, options = {}) => {
+            try {
+                const response = await fetch(`${BASE_URL}${endpoint}`, options);
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || `HTTP error! Status: ${response.status}`);
+                return result;
+            } catch (error) {
+                console.error(`Failed to fetch ${endpoint}:`, error);
+                throw error;
+            }
+        };
+
+        const updateAuthUI = () => {
+            if (loggedInUser) {
+                hideElement(authButtons);
+                showElement(userProfile);
+                welcomeMessage.textContent = `Welcome, ${loggedInUser.name}!`;
+                if (loggedInUser.role !== 'admin') {
+                    showElement(recommendationSection);
+                    fetchRecommendations(loggedInUser.id);
+                } else {
+                  //hideElement(recommendationSection);
+                    showElement(recommendationSection);
+                    fetchRecommendations(loggedInUser.id);
+                }
+                fetchWishlist(loggedInUser.id);
+
+                if (loggedInUser.role === 'developer' || loggedInUser.role === 'admin') {
+                    showElement(developerDashboard);
+                    hideElement(developerUpgradeSection);
+                    fetchMyGames();
+                } else {
+                    hideElement(developerDashboard);
+                    showElement(developerUpgradeSection);
+                }
+
+                fetchGames(searchInput.value, selectedGenreIds);
+            } else {
+                showElement(authButtons);
+                hideElement(userProfile);
+                hideElement(recommendationSection);
+                hideElement(wishlistSection);
+                hideElement(developerDashboard);
+                userWishlist = [];
+                fetchGames(searchInput.value, selectedGenreIds);
+            }
+        };
+
+        const renderGames = (games, grid, isDevView = false) => {
+            clearGrid(grid);
+            if (!games || games.length === 0) {
+                grid.innerHTML = `<p class="text-gray-400 text-center col-span-full">${isDevView ? 'You have not added any games yet.' : 'No games found.'}</p>`;
+                return;
+            }
+            games.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-800 rounded-xl overflow-hidden shadow-lg flex flex-col transform hover:scale-105 transition-transform duration-300 cursor-pointer';
+                
+                const isAdmin = loggedInUser && loggedInUser.role === 'admin';
+                const isOwner = loggedInUser && game.developer_id === loggedInUser.id;
+                
+                const wishlistCount = game.wishlist_count !== undefined ? game.wishlist_count : '';
+
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${game.image || 'https://placehold.co/400x200/1f2937/ffffff?text=No+Image'}" alt="${game.title}" class="w-full h-48 object-cover">
+                        <div class="absolute top-2 right-2 flex space-x-2">
+                            ${(isDevView && isOwner) ? `
+                                <button class="edit-game-btn bg-blue-600 p-2 rounded-full hover:bg-blue-700" title="Edit Game"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293z"/></svg></button>
+                                <button class="delete-game-btn bg-red-600 p-2 rounded-full hover:bg-red-700" title="Delete Game"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3V2h11v1z"/></svg></button>
+                            ` : ''}
+                            ${(isAdmin && !isDevView) ? `
+                                <button class="admin-delete-game-btn bg-red-800 p-2 rounded-full hover:bg-red-900" title="Admin Delete Game"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3V2h11v1z"/></svg></button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="p-4 flex-grow">
+                        <h3 class="text-lg font-bold text-gray-200 mb-1">${game.title}</h3>
+                        <p class="text-sm text-gray-400">${game.genre}</p>
+                        <p class="text-xs text-gray-500 mt-2">${game.publisher} (${game.release_year})</p>
+                        ${wishlistCount !== '' ? `
+                            <div class="flex items-center text-sm text-gray-400 mt-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-1 text-purple-400" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314"/></svg>
+                                ${wishlistCount}
+                            </div>
+                        ` : ''}
+                    </div>`;
+                
+                card.addEventListener('click', () => fetchGameDetails(game));
+                
+                if (isDevView && isOwner) {
+                    const editBtn = card.querySelector('.edit-game-btn');
+                    const deleteBtn = card.querySelector('.delete-game-btn');
+                    editBtn?.addEventListener('click', (e) => { e.stopPropagation(); openAddGameModal(game); });
+                    deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); deleteGame(game.id, game.title); });
+                }
+
+                if (isAdmin && !isDevView) {
+                    const adminDeleteBtn = card.querySelector('.admin-delete-game-btn');
+                    adminDeleteBtn?.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        adminDeleteGame(game.id, game.title);
+                    });
+                }
+                grid.appendChild(card);
+            });
+        };
+
+        const renderAnalytics = (analytics) => {
+            clearGrid(analyticsGrid);
+            if (!analytics || analytics.length === 0) {
+                analyticsGrid.innerHTML = '<p class="text-gray-400 text-center">No analytics data available yet.</p>';
+                return;
+            }
+            analyticsGrid.innerHTML = analytics.map(stat => `
+                <div class="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">${stat.title}</h3>
+                    <div class="flex space-x-6 text-center">
+                        <div><p class="text-2xl font-bold">${stat.total_wishlists}</p><p class="text-xs text-gray-400">Wishlists</p></div>
+                        <div><p class="text-2xl font-bold">${stat.total_reviews}</p><p class="text-xs text-gray-400">Reviews</p></div>
+                        <div><p class="text-2xl font-bold text-yellow-400">${(stat.average_rating || 0).toFixed(1)}</p><p class="text-xs text-gray-400">Avg Rating</p></div>
+                    </div>
+                </div>
+            `).join('');
+        };
+        
+        // --- API Call Functions ---
+        const fetchGames = async (searchTerm = '', genreIds = []) => {
+            if (!searchTerm && genreIds.length === 0) {
+                fetchPopularGames(currentSortBy);
+                return;
+            }
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (searchTerm) params.append('q', searchTerm);
+                if (genreIds.length) params.append('genres', genreIds.join(','));
+                const games = await fetchAPI(`/api/games?${params.toString()}`);
+                renderGames(games, gameGrid);
+            } catch (error) {
+                gameGrid.innerHTML = '<p class="text-red-400 text-center col-span-full">Failed to load games.</p>';
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        const fetchPopularGames = async (sortBy = 'rating') => {
+            setLoading(true);
+            try {
+                const games = await fetchAPI(`/api/popular-games?sort_by=${sortBy}`);
+                renderGames(games, gameGrid);
+                document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+                if (sortBy === 'rating') sortByRatingBtn.classList.add('active');
+                else if (sortBy === 'reviews') sortByReviewsBtn.classList.add('active');
+                else if (sortBy === 'wishlist') sortByWishlistBtn.classList.add('active');
+            } catch (error) {
+                gameGrid.innerHTML = '<p class="text-red-400 text-center col-span-full">Failed to load games.</p>';
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const fetchGameDetails = async (game) => {
+            try {
+                const reviews = await fetchAPI(`/api/reviews/${game.id}`);
+                const averageRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : 'N/A';
+                const isInWishlist = loggedInUser ? userWishlist.includes(game.id) : false;
+                
+                modalContent.innerHTML = `
+                    <div class="w-full md:w-1/3"><img src="${game.image || 'https://placehold.co/400x200/1f2937/ffffff?text=No+Image'}" alt="${game.title}" class="w-full rounded-lg shadow-xl mb-4"></div>
+                    <div class="w-full md:w-2/3">
+                        <div class="flex justify-between items-start mb-4">
+                            <div><h1 class="text-3xl font-bold text-gray-100 mb-2">${game.title}</h1><p class="text-sm text-gray-400">${game.genre} &bull; ${game.platform}</p></div>
+                            <div>${loggedInUser ? `<button id="toggleWishlistBtn" class="font-medium py-2 px-4 rounded-lg transition-colors duration-300 ${isInWishlist ? 'bg-red-600 hover:bg-red-700' : 'bg-purple-600 hover:bg-purple-700'} text-white">${isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}</button>` : ''}</div>
+                        </div>
+                        <p class="text-sm text-gray-300">${game.description || 'No description available.'}</p>
+                        <div class="bg-gray-700 rounded-lg p-4 my-6"><p class="text-lg font-semibold">Average Rating: <span class="text-yellow-400">${averageRating}</span> / 5</p><p class="text-sm text-gray-400 mt-2">Publisher: ${game.publisher} &bull; Release Year: ${game.release_year}</p></div>
+                        <h3 class="text-xl font-semibold mb-4">Reviews</h3>
+                        <div class="space-y-4 scrollable-content pr-2">${reviews.length > 0 ? reviews.map(r => `<div class="bg-gray-700 p-4 rounded-lg"><p class="font-bold text-gray-300">${r.user_name}</p><p class="text-sm text-yellow-400 mt-1">Rating: ${r.rating} / 5</p><p class="text-sm text-gray-300 mt-2">${r.review_text}</p><p class="text-xs text-gray-500 mt-2">Reviewed on ${r.date}</p></div>`).join('') : '<p class="text-gray-400">No reviews yet.</p>'}</div>
+                        <div id="reviewFormContainer" class="mt-6">${loggedInUser ? `<form id="reviewForm"><h4 class="font-semibold text-lg mb-2">Leave a Review</h4><div class="flex items-center space-x-2 mb-2"><label for="rating" class="text-gray-400">Rating:</label><input type="number" id="rating" min="1" max="5" class="w-20 px-2 py-1 rounded-md bg-gray-700" required></div><textarea id="reviewText" placeholder="Write your review..." class="w-full h-24 p-2 rounded-md bg-gray-700" required></textarea><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">Submit</button><p id="reviewMessage" class="text-sm mt-2"></p></form>` : '<p class="text-gray-400">Log in to leave a review.</p>'}</div>
+                    </div>`;
+                showElement(gameDetailsModal);
+
+                if (loggedInUser) {
+                    document.getElementById('toggleWishlistBtn')?.addEventListener('click', async () => {
+                        const method = userWishlist.includes(game.id) ? 'DELETE' : 'POST';
+                        const endpoint = method === 'DELETE' ? `/api/wishlist/${loggedInUser.id}/${game.id}` : '/api/wishlist';
+                        try {
+                            await fetchAPI(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: method === 'POST' ? JSON.stringify({ user_id: loggedInUser.id, game_id: game.id }) : null });
+                            await fetchWishlist(loggedInUser.id);
+                            fetchGameDetails(game);
+                        } catch (error) { alert(`Error: ${error.message}`); }
+                    });
+                    document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const reviewData = { user_id: loggedInUser.id, game_id: game.id, rating: e.target.rating.value, review_text: e.target.reviewText.value };
+                        try {
+                            await fetchAPI('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reviewData) });
+                            fetchGameDetails(game);
+                        } catch (error) { document.getElementById('reviewMessage').textContent = `Error: ${error.message}`; }
+                    });
+                }
+            } catch (error) {
+                modalContent.innerHTML = '<p class="text-red-400">Failed to load game details.</p>';
+                showElement(gameDetailsModal);
+            }
+        };
+
+        const fetchWishlist = async (userId) => {
+            try {
+                const data = await fetchAPI(`/api/wishlist/${userId}`);
+                userWishlist = data.wishlist.map(game => game.id);
+                if (data.wishlist.length > 0) { showElement(wishlistSection); renderGames(data.wishlist, wishlistGrid); } 
+                else { wishlistGrid.innerHTML = '<p class="text-gray-400 text-center col-span-full">Your wishlist is empty.</p>'; }
+            } catch (error) { hideElement(wishlistSection); }
+        };
+        
+        const fetchRecommendations = async (userId) => {
+                    try {
+                        const recommendedGames = await fetchAPI(`/api/recommendations/${userId}`);
+
+                        // --- ADD THIS LINE FOR DEBUGGING ---
+                        console.log("Received recommendations from backend:", recommendedGames);
+
+                        if (recommendedGames && recommendedGames.length > 0) {
+                            showElement(recommendationSection); 
+                            renderGames(recommendedGames, recommendationGrid);
+                        } else {
+                            hideElement(recommendationSection);
+                        }
+                    } catch (error) {
+                        console.error("Error while fetching recommendations:", error); // Good to log errors too
+                        hideElement(recommendationSection);
+                    }
+                };
+
+        const fetchMyGames = async () => {
+            try {
+                const allGames = await fetchAPI('/api/games');
+                myGames = allGames.filter(game => game.developer_id === loggedInUser.id);
+                renderGames(myGames, myGamesGrid, true);
+            } catch (error) { myGamesGrid.innerHTML = '<p class="text-red-400 text-center col-span-full">Could not load your games.</p>'; }
+        };
+
+        const fetchAnalytics = async () => {
+            try {
+                const analyticsData = await fetchAPI(`/api/developer/${loggedInUser.id}/analytics`);
+                renderAnalytics(analyticsData);
+            } catch (error) { analyticsGrid.innerHTML = '<p class="text-red-400 text-center">Could not load analytics.</p>'; }
+        };
+        
+        const openAddGameModal = (game = null) => {
+            addGameForm.reset();
+            addGameMessage.textContent = '';
+            document.getElementById('gameId').value = game ? game.id : '';
+            addGameTitle.textContent = game ? 'Edit Game' : 'Add New Game';
+            if(game) {
+                document.getElementById('gameTitle').value = game.title;
+                document.getElementById('gameDescription').value = game.description;
+                document.getElementById('gamePublisher').value = game.publisher;
+                document.getElementById('gameReleaseYear').value = game.release_year;
+                document.getElementById('gameImage').value = game.image;
+                document.getElementById('gameGenre').value = allGenres.find(g => g.name === game.genre)?.id || '';
+                const platform = allPlatforms.find(p => p.name === game.platform);
+                if(platform) document.getElementById('gamePlatform').value = platform.id;
+            }
+            showElement(addGameModal);
+        };
+        
+        const deleteGame = async (gameId, gameTitle) => {
+            try {
+                await fetchAPI(`/api/games/${gameId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ developer_id: loggedInUser.id }) });
+                alert('Game deleted successfully.');
+                fetchMyGames();
+            } catch (error) { alert(`Error: ${error.message}`); }
+        };
+
+        const adminDeleteGame = async (gameId, gameTitle) => {
+            try {
+                await fetchAPI(`/api/admin/games/${gameId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_id: loggedInUser.id }) });
+                alert(`Admin: Successfully deleted "${gameTitle}".`);
+                fetchGames();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        };
+
+        // --- Event Listeners ---
+        loginBtn.addEventListener('click', () => { authTitle.textContent = 'Login'; authSubmitBtn.textContent = 'Login'; hideElement(nameField); showElement(authModal); authMessage.textContent = ''; authForm.reset(); });
+        registerBtn.addEventListener('click', () => { authTitle.textContent = 'Register'; authSubmitBtn.textContent = 'Register'; showElement(nameField); showElement(authModal); authMessage.textContent = ''; authForm.reset(); });
+        logoutBtn.addEventListener('click', () => { loggedInUser = null; updateAuthUI(); });
+        closeAuthModalBtn.addEventListener('click', () => hideElement(authModal));
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const isLogin = authTitle.textContent === 'Login';
+            const endpoint = isLogin ? '/api/login' : '/api/register';
+            const data = { email: authForm.email.value, password: authForm.password.value };
+            if (!isLogin) data.name = authForm.name.value;
+            
+            try {
+                const result = await fetchAPI(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                authMessage.textContent = result.message;
+                authMessage.className = 'text-center text-sm mt-4 text-green-400';
+                if (isLogin) { loggedInUser = result.user; updateAuthUI(); }
+                setTimeout(() => hideElement(authModal), 1000);
+            } catch (error) {
+                authMessage.textContent = `Error: ${error.message}`;
+                authMessage.className = 'text-center text-sm mt-4 text-red-400';
+            }
+        });
+
+        searchInput.addEventListener('input', (e) => fetchGames(e.target.value, selectedGenreIds));
+        genreFilterBtn.addEventListener('click', () => genreDropdown.classList.toggle('hidden'));
+        wishlistBtn.addEventListener('click', () => wishlistSection.classList.toggle('hidden'));
+        accountBtn.addEventListener('click', () => { newUsernameInput.value = loggedInUser.name; showElement(accountSettingsModal); });
+        closeModalBtn.addEventListener('click', () => hideElement(gameDetailsModal));
+        closeAccountModalBtn.addEventListener('click', () => hideElement(accountSettingsModal));
+        sortByRatingBtn.addEventListener('click', () => { currentSortBy = 'rating'; fetchPopularGames(currentSortBy); });
+        sortByReviewsBtn.addEventListener('click', () => { currentSortBy = 'reviews'; fetchPopularGames(currentSortBy); });
+        sortByWishlistBtn.addEventListener('click', () => { currentSortBy = 'wishlist'; fetchPopularGames(currentSortBy); });
+
+        changeUsernameForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const result = await fetchAPI(`/api/user/${loggedInUser.id}/change-username`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newUsernameInput.value }) });
+                usernameMessage.textContent = result.message;
+                usernameMessage.className = 'text-sm mt-2 text-green-400';
+                loggedInUser.name = newUsernameInput.value;
+                updateAuthUI();
+            } catch (error) {
+                usernameMessage.textContent = `Error: ${error.message}`;
+                usernameMessage.className = 'text-sm mt-2 text-red-400';
+            }
+        });
+        
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('newPassword').value;
+            try {
+                const result = await fetchAPI(`/api/user/${loggedInUser.id}/change-password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: newPassword }) });
+                passwordMessage.textContent = result.message;
+                passwordMessage.className = 'text-sm mt-2 text-green-400';
+                changePasswordForm.reset();
+            } catch (error) {
+                passwordMessage.textContent = `Error: ${error.message}`;
+                passwordMessage.className = 'text-sm mt-2 text-red-400';
+            }
+        });
+
+        convertToDevBtn.addEventListener('click', async () => {
+            try {
+                const result = await fetchAPI(`/api/user/${loggedInUser.id}/convert-to-developer`, { method: 'POST' });
+                developerMessage.textContent = result.message;
+                developerMessage.className = 'text-sm mt-2 text-green-400';
+                loggedInUser.role = 'developer';
+                updateAuthUI();
+            } catch (error) {
+                developerMessage.textContent = `Error: ${error.message}`;
+                developerMessage.className = 'text-sm mt-2 text-red-400';
+            }
+        });
+
+        deleteAccountBtn.addEventListener('click', async () => {
+            try {
+                await fetchAPI(`/api/user/${loggedInUser.id}`, { method: 'DELETE' });
+                alert('Account deleted successfully.');
+                loggedInUser = null;
+                updateAuthUI();
+                hideElement(accountSettingsModal);
+            } catch (error) { alert(`Error: ${error.message}`); }
+        });
+
+        myGamesTabBtn.addEventListener('click', () => { showElement(myGamesView); hideElement(analyticsView); myGamesTabBtn.className = 'py-2 px-4 text-lg font-medium border-b-2 border-blue-500 text-white'; analyticsTabBtn.className = 'py-2 px-4 text-lg font-medium border-b-2 border-transparent text-gray-400 hover:text-white'; fetchMyGames(); });
+        analyticsTabBtn.addEventListener('click', () => { hideElement(myGamesView); showElement(analyticsView); analyticsTabBtn.className = 'py-2 px-4 text-lg font-medium border-b-2 border-blue-500 text-white'; myGamesTabBtn.className = 'py-2 px-4 text-lg font-medium border-b-2 border-transparent text-gray-400 hover:text-white'; fetchAnalytics(); });
+        addGameBtn.addEventListener('click', () => openAddGameModal());
+        closeAddGameModalBtn.addEventListener('click', () => hideElement(addGameModal));
+        addGameForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const gameId = document.getElementById('gameId').value;
+            const isEditing = !!gameId;
+            const endpoint = isEditing ? `/api/games/${gameId}` : '/api/games';
+            const method = isEditing ? 'PUT' : 'POST';
+            
+            const data = {
+                title: document.getElementById('gameTitle').value, description: document.getElementById('gameDescription').value,
+                publisher: document.getElementById('gamePublisher').value, release_year: parseInt(document.getElementById('gameReleaseYear').value, 10),
+                image: document.getElementById('gameImage').value, genre_id: parseInt(document.getElementById('gameGenre').value, 10),
+                platform_id: parseInt(document.getElementById('gamePlatform').value, 10), developer_id: loggedInUser.id
+            };
+
+            try {
+                const result = await fetchAPI(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                addGameMessage.textContent = result.message;
+                addGameMessage.className = 'text-sm mt-2 text-center text-green-400';
+                fetchMyGames();
+                setTimeout(() => hideElement(addGameModal), 1000);
+            } catch (error) {
+                addGameMessage.textContent = `Error: ${error.message}`;
+                addGameMessage.className = 'text-sm mt-2 text-center text-red-400';
+            }
+        });
+
+        // --- Initial Load ---
+        const initializeApp = async () => {
+            allPlatforms = [ {id: 1, name: 'PC'}, {id: 2, name: 'PS5'}, {id: 3, name: 'Xbox'}, {id: 4, name: 'PS4'}, {id: 5, name: 'Multi-platform'}, {id: 6, name: 'Nintendo Switch'}, {id: 7, name: 'PS3'}, {id: 8, name: 'Xbox 360'} ];
+            
+            try {
+                allGenres = await fetchAPI('/api/genres');
+                genreOptions.innerHTML = allGenres.map(g => `<div class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 cursor-pointer"><input type="checkbox" id="genre-filter-${g.id}" value="${g.id}" class="form-checkbox h-4 w-4 text-blue-600"><label for="genre-filter-${g.id}" class="ml-3 block">${g.name}</label></div>`).join('');
+                genreOptions.querySelectorAll('input').forEach(input => input.addEventListener('change', (e) => {
+                    const id = parseInt(e.target.value, 10);
+                    if (e.target.checked) selectedGenreIds.push(id);
+                    else selectedGenreIds = selectedGenreIds.filter(gid => gid !== id);
+                    fetchGames(searchInput.value, selectedGenreIds);
+                }));
+
+                document.getElementById('gameGenre').innerHTML += allGenres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+                document.getElementById('gamePlatform').innerHTML += allPlatforms.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            } catch (e) {
+                console.error("Failed to load initial data");
+                genreOptions.innerHTML = '<p class="text-red-400 p-4">Could not load genres.</p>';
+            }
+
+            fetchPopularGames(currentSortBy);
+            updateAuthUI();
+        };
+
+        initializeApp();
+    });
+    </script>
+</body>
+</html>
+
